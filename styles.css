@@ -1,0 +1,189 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --ink: #1c2333;
+  --muted: #5f6b85;
+  --accent: #2f6fed;
+  --border: #dde3f0;
+  --shadow: 0 16px 40px rgba(22, 32, 52, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.app-header {
+  padding: 2.5rem 6vw 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+}
+
+.subhead {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  max-width: 560px;
+}
+
+.status-pill {
+  padding: 0.5rem 1rem;
+  background: rgba(47, 111, 237, 0.1);
+  color: var(--accent);
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+main {
+  padding: 0 6vw 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.card ul {
+  padding-left: 1.25rem;
+  color: var(--muted);
+}
+
+.product-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.product-card {
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 14px;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.product-card strong {
+  font-size: 1.05rem;
+}
+
+label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+input,
+select,
+button {
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(47, 111, 237, 0.24);
+}
+
+.result {
+  margin-top: 1rem;
+  background: #f1f5ff;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #1d2a52;
+  min-height: 2.5rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem 0 2rem;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
