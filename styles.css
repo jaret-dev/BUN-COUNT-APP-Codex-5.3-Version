@@ -6,7 +6,7 @@
   --muted: #5f6b85;
   --accent: #2f6fed;
   --border: #dde3f0;
-  --shadow: 0 12px 24px rgba(22, 32, 52, 0.08);
+  --shadow: 0 16px 40px rgba(22, 32, 52, 0.08);
 }
 
 * {
@@ -62,28 +62,6 @@ main {
   gap: 2rem;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0 6vw 1.5rem;
-}
-
-.tab-button {
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  padding: 0.6rem 1rem;
-  background: #fff;
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.tab-button.is-active {
-  color: var(--accent);
-  border-color: rgba(47, 111, 237, 0.4);
-  background: rgba(47, 111, 237, 0.08);
-}
-
 .grid {
   display: grid;
   gap: 1.5rem;
@@ -108,6 +86,23 @@ main {
 .card ul {
   padding-left: 1.25rem;
   color: var(--muted);
+}
+
+.product-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.product-card {
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 14px;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.product-card strong {
+  font-size: 1.05rem;
 }
 
 label {
@@ -153,68 +148,18 @@ button:hover {
   overflow-x: auto;
 }
 
-.table-wrapper table,
-.sheet-table {
+.table-wrapper table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
 
 .table-wrapper th,
-.table-wrapper td,
-.sheet-table th,
-.sheet-table td {
+.table-wrapper td {
   padding: 0.65rem;
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
-}
-
-.sheet-table th,
-.sheet-table td {
-  border: 1px solid #1b1b1b;
-  text-align: center;
-  padding: 0.5rem;
-}
-
-.sheet-table th {
-  background: #d2d2d2;
-  font-weight: 700;
-}
-
-.sheet-table .row-header {
-  text-align: left;
-  font-weight: 700;
-  background: #f2f2f2;
-}
-
-.sheet-table .section-header {
-  background: #c9c9c9;
-  font-weight: 700;
-  text-align: left;
-}
-
-.sheet-table input {
-  width: 100%;
-  border: none;
-  text-align: center;
-  font-weight: 600;
-  background: transparent;
-}
-
-.sheet-table input:focus {
-  outline: 2px solid rgba(47, 111, 237, 0.4);
-  background: #f6f9ff;
-}
-
-.muted {
-  color: var(--muted);
-  margin: 0.4rem 0 0;
-}
-
-.helper-note {
-  margin-top: 1rem;
-  color: var(--muted);
 }
 
 .card-header {
@@ -240,9 +185,5 @@ footer {
   .card-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .tabs {
-    flex-direction: column;
   }
 }

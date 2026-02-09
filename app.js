@@ -1,19 +1,19 @@
 const products = [
   {
     id: 1,
-    name: "Original Bun",
+    name: "Original Buns",
     bunsPerBag: 12,
     orderIncrement: 5,
   },
   {
     id: 2,
-    name: "Hot Dog Bun",
+    name: "Hot Dog Buns",
     bunsPerBag: 6,
     orderIncrement: 9,
   },
   {
     id: 3,
-    name: "Junior Bun",
+    name: "Junior Buns",
     bunsPerBag: 8,
     orderIncrement: 9,
   },
@@ -23,15 +23,18 @@ const storageKey = "bun-count-inventory";
 const orderHistoryKey = "bun-count-orders";
 
 const selectors = {
-  weeklySheet: document.getElementById("weeklySheet"),
-  forecastSheet: document.getElementById("forecastSheet"),
-  weekStartDate: document.getElementById("weekStartDate"),
-  forecastStartDate: document.getElementById("forecastStartDate"),
+  productCards: document.getElementById("productCards"),
+  entryProduct: document.getElementById("entryProduct"),
+  entryDate: document.getElementById("entryDate"),
+  entryEodc: document.getElementById("entryEodc"),
+  entryRp: document.getElementById("entryRp"),
+  entrySummary: document.getElementById("entrySummary"),
+  dailyEntryForm: document.getElementById("dailyEntryForm"),
+  inventoryTable: document.getElementById("inventoryTable"),
+  viewStartDate: document.getElementById("viewStartDate"),
   orderForm: document.getElementById("orderForm"),
   orderDate: document.getElementById("orderDate"),
   orderSummary: document.getElementById("orderSummary"),
-  tabButtons: document.querySelectorAll(".tab-button"),
-  tabPanels: document.querySelectorAll("[data-tab-panel]"),
 };
 
 const dayNames = [
@@ -43,8 +46,6 @@ const dayNames = [
   "Friday",
   "Saturday",
 ];
-
-const shortDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const orderToDelivery = {
   Monday: 3,
@@ -98,75 +99,33 @@ const fromISO = (value) => {
   return new Date(year, month - 1, day);
 };
 
-const getDayName = (value) => dayNames[new Date(value).getDay()];
-const getShortDayName = (value) => shortDayNames[new Date(value).getDay()];
-
 const formatDate = (value) =>
   new Date(value).toLocaleDateString("en-US", {
+    weekday: "short",
     month: "short",
     day: "numeric",
   });
 
-const getWeekStart = (date = new Date()) => {
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(date);
-  monday.setDate(date.getDate() + diff);
-  return monday;
-};
+const getDayName = (value) => dayNames[new Date(value).getDay()];
 
-const getDatesBetween = (startDateISO, length) => {
-  const start = fromISO(startDateISO);
-  return Array.from({ length }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return toISO(date);
-  });
-};
+const getProductById = (id) => products.find((product) => product.id === id);
+
+const clampToIncrement = (value, increment) =>
+  Math.max(0, Math.round(value / increment) * increment);
 
 const findInventoryRecord = (productId, date) =>
   state.inventory.find(
     (record) => record.productId === productId && record.date === date
   );
 
-const upsertInventory = (productId, date, updates) => {
-  const existing = findInventoryRecord(productId, date) || {
-    productId,
-    date,
-  };
-  const merged = {
-    ...existing,
-    ...updates,
-  };
-
-  const rpBags = merged.rpBags ?? 0;
-  const pdcBags = merged.pdcBags;
-  if (pdcBags !== null && pdcBags !== undefined) {
-    const mcBags = getYesterdayEodc(productId, date);
-    merged.usedBags = mcBags + rpBags - pdcBags;
-  }
-
-  const existingIndex = state.inventory.findIndex(
-    (entry) => entry.productId === productId && entry.date === date
-  );
-
-  if (existingIndex >= 0) {
-    state.inventory[existingIndex] = merged;
-  } else {
-    state.inventory.push(merged);
-  }
-
-  storage.saveInventory(state.inventory);
-};
-
 const getYesterdayEodc = (productId, date) => {
   const previous = new Date(date);
   previous.setDate(previous.getDate() - 1);
   const record = findInventoryRecord(productId, toISO(previous));
-  return record?.pdcBags ?? 0;
+  return record ? record.pdcBags : 0;
 };
 
-const computeForecastAverage = (productId, date) => {
+const computeForecast = (productId, date) => {
   const targetDay = getDayName(date);
   const history = state.inventory
     .filter((record) => record.productId === productId)
@@ -183,246 +142,79 @@ const computeForecastAverage = (productId, date) => {
   return Math.round(sum / history.length);
 };
 
-const getForecast = (productId, date) => {
-  const record = findInventoryRecord(productId, date);
-  if (record?.fcBags !== undefined && record?.fcBags !== null) {
-    return record.fcBags;
+const upsertInventory = (productId, date, pdcBags, rpBags) => {
+  const mcBags = getYesterdayEodc(productId, date);
+  const istBags = mcBags + rpBags;
+  const usedBags = istBags - pdcBags;
+  const fcBags = computeForecast(productId, date);
+
+  const record = {
+    productId,
+    date,
+    pdcBags,
+    rpBags,
+    mcBags,
+    istBags,
+    usedBags,
+    fcBags,
+  };
+
+  const existingIndex = state.inventory.findIndex(
+    (entry) => entry.productId === productId && entry.date === date
+  );
+
+  if (existingIndex >= 0) {
+    state.inventory[existingIndex] = record;
+  } else {
+    state.inventory.push(record);
   }
-  return computeForecastAverage(productId, date);
+
+  storage.saveInventory(state.inventory);
+  return record;
 };
 
-const displayValue = (value) => (value === null || value === undefined ? "—" : value);
+const refreshInventoryTable = () => {
+  const startDate = selectors.viewStartDate.value
+    ? fromISO(selectors.viewStartDate.value)
+    : new Date();
+  const rows = [];
 
-const buildHeaderRow = (dates) => `
-  <tr>
-    <th class="section-header">&nbsp;</th>
-    ${dates
-      .map(
-        (date) => `
-          <th>
-            ${getShortDayName(date)}<br />
-            <span class="muted">${formatDate(date)}</span>
-          </th>
-        `
-      )
-      .join("")}
-  </tr>
-`;
+  for (let offset = 0; offset < 14; offset += 1) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + offset);
+    const dateISO = toISO(date);
 
-const buildRow = ({ label, dates, renderCell }) => `
-  <tr>
-    <td class="row-header">${label}</td>
-    ${dates.map((date) => renderCell(date)).join("")}
-  </tr>
-`;
-
-const renderWeeklySheet = () => {
-  const startDateISO = selectors.weekStartDate.value;
-  if (!startDateISO) {
-    return;
-  }
-  const dates = getDatesBetween(startDateISO, 7);
-
-  const tableRows = products
-    .map((product) => {
-      const header = `
-        <tr>
-          <th class="section-header">${product.name}</th>
-          ${dates
-            .map((date) => `<th>${getShortDayName(date)}</th>`)
-            .join("")}
-        </tr>
-      `;
-
-      const rows = [
-        buildRow({
-          label: "Morning Count",
-          dates,
-          renderCell: (date) => {
-            const mc = getYesterdayEodc(product.id, date);
-            return `<td>${displayValue(mc)}</td>`;
-          },
-        }),
-        buildRow({
-          label: "Received",
-          dates,
-          renderCell: (date) => {
-            const record = findInventoryRecord(product.id, date);
-            const rpValue = record?.rpBags ?? "";
-            return `
-              <td>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  data-field="rpBags"
-                  data-product="${product.id}"
-                  data-date="${date}"
-                  value="${rpValue}"
-                />
-              </td>
-            `;
-          },
-        }),
-        buildRow({
-          label: "Total (IST)",
-          dates,
-          renderCell: (date) => {
-            const record = findInventoryRecord(product.id, date);
-            const rp = record?.rpBags ?? 0;
-            const mc = getYesterdayEodc(product.id, date);
-            return `<td>${displayValue(mc + rp)}</td>`;
-          },
-        }),
-        buildRow({
-          label: "Night Count (EODC)",
-          dates,
-          renderCell: (date) => {
-            const record = findInventoryRecord(product.id, date);
-            const pdcValue = record?.pdcBags ?? "";
-            return `
-              <td>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  data-field="pdcBags"
-                  data-product="${product.id}"
-                  data-date="${date}"
-                  value="${pdcValue}"
-                />
-              </td>
-            `;
-          },
-        }),
-        buildRow({
-          label: "Used",
-          dates,
-          renderCell: (date) => {
-            const record = findInventoryRecord(product.id, date);
-            const rp = record?.rpBags ?? 0;
-            const mc = getYesterdayEodc(product.id, date);
-            const pdc = record?.pdcBags;
-            if (pdc === null || pdc === undefined) {
-              return `<td>—</td>`;
-            }
-            return `<td>${mc + rp - pdc}</td>`;
-          },
-        }),
-        buildRow({
-          label: "RMS Forecast (FC)",
-          dates,
-          renderCell: (date) => `<td>${displayValue(getForecast(product.id, date))}</td>`,
-        }),
-      ];
-
-      return `${header}${rows.join("")}`;
-    })
-    .join("");
-
-  selectors.weeklySheet.innerHTML = `
-    <table class="sheet-table">
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-  `;
-};
-
-const renderForecastSheet = () => {
-  const startDateISO = selectors.forecastStartDate.value;
-  if (!startDateISO) {
-    return;
-  }
-  const dates = getDatesBetween(startDateISO, 14);
-
-  const rows = products
-    .map((product) => {
-      const headerRow = `
-        <tr>
-          <th class="section-header">${product.name}</th>
-          ${dates
-            .map(
-              (date) => `
-                <th>
-                  ${getShortDayName(date)}<br />
-                  <span class="muted">${formatDate(date)}</span>
-                </th>
-              `
-            )
-            .join("")}
-        </tr>
-      `;
-
-      const rpRow = buildRow({
-        label: "Received (RP)",
-        dates,
-        renderCell: (date) => {
-          const record = findInventoryRecord(product.id, date);
-          const rpValue = record?.rpBags ?? "";
-          return `
-            <td>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                data-field="rpBags"
-                data-product="${product.id}"
-                data-date="${date}"
-                value="${rpValue}"
-              />
-            </td>
-          `;
-        },
+    products.forEach((product) => {
+      const record = findInventoryRecord(product.id, dateISO);
+      rows.push({
+        date: dateISO,
+        productName: product.name,
+        mcBags: record ? record.mcBags : "—",
+        rpBags: record ? record.rpBags : "—",
+        istBags: record ? record.istBags : "—",
+        pdcBags: record ? record.pdcBags : "—",
+        usedBags: record ? record.usedBags : "—",
+        fcBags: record ? record.fcBags : computeForecast(product.id, dateISO),
       });
+    });
+  }
 
-      const fcRow = buildRow({
-        label: "Forecast (FC)",
-        dates,
-        renderCell: (date) => {
-          const record = findInventoryRecord(product.id, date);
-          const fcValue = record?.fcBags ?? "";
-          return `
-            <td>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                data-field="fcBags"
-                data-product="${product.id}"
-                data-date="${date}"
-                value="${fcValue}"
-              />
-            </td>
-          `;
-        },
-      });
-
-      return `${headerRow}${rpRow}${fcRow}`;
-    })
+  selectors.inventoryTable.innerHTML = rows
+    .map(
+      (row) => `
+        <tr>
+          <td>${formatDate(row.date)}</td>
+          <td>${row.productName}</td>
+          <td>${row.mcBags}</td>
+          <td>${row.rpBags}</td>
+          <td>${row.istBags}</td>
+          <td>${row.pdcBags}</td>
+          <td>${row.usedBags}</td>
+          <td>${row.fcBags}</td>
+        </tr>
+      `
+    )
     .join("");
-
-  selectors.forecastSheet.innerHTML = `
-    <table class="sheet-table">
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
-};
-
-const handleSheetInput = (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) {
-    return;
-  }
-  const { field, product, date } = target.dataset;
-  if (!field || !product || !date) {
-    return;
-  }
-  const value = target.value === "" ? null : Number(target.value);
-  upsertInventory(Number(product), date, { [field]: value });
-  renderWeeklySheet();
 };
 
 const getCoverageDays = (orderDateISO) => {
@@ -455,9 +247,6 @@ const getDeliveryDate = (orderDateISO) => {
   return { deliveryDate: toISO(delivery), deliveryDay };
 };
 
-const clampToIncrement = (value, increment) =>
-  Math.max(0, Math.round(value / increment) * increment);
-
 const calculateOrderForProduct = (product, orderDateISO) => {
   const deliveryInfo = getDeliveryDate(orderDateISO);
   if (!deliveryInfo) {
@@ -465,9 +254,7 @@ const calculateOrderForProduct = (product, orderDateISO) => {
   }
 
   const istRecord = findInventoryRecord(product.id, orderDateISO);
-  const startingIST =
-    (getYesterdayEodc(product.id, orderDateISO) || 0) +
-    (istRecord?.rpBags ?? 0);
+  const startingIST = istRecord ? istRecord.istBags : 0;
 
   const deliveryDateISO = deliveryInfo.deliveryDate;
   let rpTotal = 0;
@@ -485,7 +272,7 @@ const calculateOrderForProduct = (product, orderDateISO) => {
 
   const coverageDays = getCoverageDays(orderDateISO);
   const totalForecast = coverageDays.reduce(
-    (sum, date) => sum + getForecast(product.id, date),
+    (sum, date) => sum + computeForecast(product.id, date),
     0
   );
 
@@ -500,6 +287,49 @@ const calculateOrderForProduct = (product, orderDateISO) => {
     ordered,
     deliveryDate: deliveryDateISO,
   };
+};
+
+const renderProducts = () => {
+  selectors.productCards.innerHTML = products
+    .map(
+      (product) => `
+        <div class="product-card">
+          <strong>${product.name}</strong>
+          <span>Buns per bag: ${product.bunsPerBag}</span>
+          <span>Order increment: ${product.orderIncrement} bags</span>
+        </div>
+      `
+    )
+    .join("");
+
+  selectors.entryProduct.innerHTML = products
+    .map(
+      (product) => `<option value="${product.id}">${product.name}</option>`
+    )
+    .join("");
+};
+
+const handleEntrySubmit = (event) => {
+  event.preventDefault();
+  const productId = Number(selectors.entryProduct.value);
+  const date = selectors.entryDate.value;
+  const pdcBags = Number(selectors.entryEodc.value);
+  const rpBags = Number(selectors.entryRp.value || 0);
+
+  if (!date) {
+    selectors.entrySummary.textContent = "Please select a date.";
+    return;
+  }
+
+  const record = upsertInventory(productId, date, pdcBags, rpBags);
+  const product = getProductById(productId);
+
+  selectors.entrySummary.innerHTML = `
+    <strong>${product.name}</strong> — ${formatDate(record.date)}<br />
+    MC: ${record.mcBags} bags · RP: ${record.rpBags} bags · IST: ${record.istBags} bags<br />
+    EODC: ${record.pdcBags} bags · Used: ${record.usedBags} bags · FC: ${record.fcBags} bags
+  `;
+  refreshInventoryTable();
 };
 
 const handleOrderSubmit = (event) => {
@@ -542,33 +372,16 @@ const handleOrderSubmit = (event) => {
 };
 
 const initializeDates = () => {
-  const monday = getWeekStart(new Date());
   const todayISO = toISO(new Date());
-  selectors.weekStartDate.value = toISO(monday);
-  selectors.forecastStartDate.value = toISO(monday);
+  selectors.entryDate.value = todayISO;
   selectors.orderDate.value = todayISO;
+  selectors.viewStartDate.value = todayISO;
 };
 
-const setupTabs = () => {
-  selectors.tabButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      selectors.tabButtons.forEach((btn) => btn.classList.remove("is-active"));
-      button.classList.add("is-active");
-      const target = button.dataset.tab;
-      selectors.tabPanels.forEach((panel) => {
-        panel.hidden = panel.dataset.tabPanel !== target;
-      });
-    });
-  });
-};
-
-selectors.weeklySheet.addEventListener("input", handleSheetInput);
-selectors.forecastSheet.addEventListener("input", handleSheetInput);
-selectors.weekStartDate.addEventListener("change", renderWeeklySheet);
-selectors.forecastStartDate.addEventListener("change", renderForecastSheet);
+selectors.dailyEntryForm.addEventListener("submit", handleEntrySubmit);
 selectors.orderForm.addEventListener("submit", handleOrderSubmit);
+selectors.viewStartDate.addEventListener("change", refreshInventoryTable);
 
+renderProducts();
 initializeDates();
-setupTabs();
-renderWeeklySheet();
-renderForecastSheet();
+refreshInventoryTable();
