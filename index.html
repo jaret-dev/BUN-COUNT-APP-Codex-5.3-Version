@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harvey's Bun Count</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Harvey's Bread Ordering App</p>
+      <h1>Bun Count Weekly Sheet</h1>
+      <p class="subhead">Spreadsheet-style view for daily counts, received product, and forecasted usage.</p>
+    </div>
+    <div class="status-pill">v1.2 Spec</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-button is-active" type="button" data-tab="weekly">Weekly Sheet</button>
+    <button class="tab-button" type="button" data-tab="forecast">2-Week FC + RP Entry</button>
+  </nav>
+
+  <main>
+    <section class="card" data-tab-panel="weekly">
+      <div class="card-header">
+        <div>
+          <h2>Weekly Inventory Sheet</h2>
+          <p class="muted">Enter end-of-day counts in the grid. MC, IST, and USED calculate automatically.</p>
+        </div>
+        <label>
+          Week Starting (Monday)
+          <input type="date" id="weekStartDate" />
+        </label>
+      </div>
+      <div class="table-wrapper" id="weeklySheet"></div>
+    </section>
+
+    <section class="card" data-tab-panel="forecast" hidden>
+      <div class="card-header">
+        <div>
+          <h2>2-Week Forecast & RP Entry</h2>
+          <p class="muted">Fill out all FC and RP values for the next 14 days before running orders.</p>
+        </div>
+        <label>
+          Start Date
+          <input type="date" id="forecastStartDate" />
+        </label>
+      </div>
+      <div class="table-wrapper" id="forecastSheet"></div>
+      <p class="helper-note">Tip: enter values in bags. The system saves each change automatically.</p>
+    </section>
+
+    <section class="grid two" data-tab-panel="weekly">
+      <article class="card">
+        <h2>Order Generator</h2>
+        <form id="orderForm">
+          <label>
+            Order Date
+            <input type="date" id="orderDate" required />
+          </label>
+          <button type="submit">Generate Orders</button>
+        </form>
+        <div class="result" id="orderSummary"></div>
+      </article>
+
+      <article class="card">
+        <h2>Core Rules</h2>
+        <ul>
+          <li>Lead time: <strong>72 hours</strong> (3 days).</li>
+          <li>No delivery: <strong>Wednesday & Sunday</strong>.</li>
+          <li>Order days: <strong>Monday–Friday</strong>.</li>
+          <li>Order quantities must be exact multiples of the product increment.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>Inventory logic based on Harvey's Bread Ordering App Technical Specification v1.2.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
