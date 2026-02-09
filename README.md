@@ -12,7 +12,7 @@ Then open `http://localhost:8000` in your browser.
 
 ## Features
 
-- Daily End-of-Day Count entry with automatic MC/IST/USED calculations.
-- 14-day rolling inventory view.
+- Spreadsheet-style weekly sheet with MC, RP, IST, EODC, Used, and FC values.
+- 2-week forecast and received product (FC/RP) entry grid.
 - Order generator that applies lead-time rules, delivery-day mapping, and product increments.
 - Local storage persistence for inventory and orders.
